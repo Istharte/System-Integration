@@ -54,11 +54,17 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # TODO: Create `TwistController` object
-        # self.controller = TwistController(<Arguments you wish to provide>)
+        self.controller = TwistController()
 
         # TODO: Subscribe to all the topics you need to
+	self.dbw_enabled = False
+	
+	rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.check_dbw_cb)
 
         self.loop()
+
+    def check_dbw_cb(self, msg):
+	self.dbw_enabled = msg
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
