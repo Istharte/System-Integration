@@ -32,21 +32,63 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
+	#rospy.Subscriber('/traffic_waypoint', Lane, self.traffic_cb)
+	#rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+	self.current_x = 0
+	self.current_y = 0
+	self.current_z = 0
+	
+	self.near_detected = False
+	self.near_id = 0
 
         rospy.spin()
 
     def pose_cb(self, msg):
         # TODO: Implement
-        pass
+	self.current_x = msg.pose.position.x
+	self.current_y = msg.pose.position.y
+	self.current_z = msg.pose.position.z
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
-        pass
+	# Search near the current position.
+	dist_min = 1000
+	final_waypoints = Lane()
+	final_wps = []
+	near_id = self.near_id
+
+	if self.near_detected: 
+	    for i in range(self.near_id, len(waypoints.waypoints)):
+		dist = math.sqrt((self.current_x - waypoints.waypoints[i].pose.pose.position.x)**2 * \
+		       (self.current_y - waypoints.waypoints[i].pose.pose.position.y)**2 + \
+		       (self.current_z - waypoints.waypoints[i].pose.pose.position.z)**2)
+		if dist < dist_min:
+		    dist_min = dist
+		    near_id = i
+		    break
+	    self.near_id = near_id
+	    self.near_detected = True
+	else:
+	    for i in range(len(waypoints.waypoints)):
+		dist = math.sqrt((self.current_x - waypoints.waypoints[i].pose.pose.position.x)**2 * \
+                       (self.current_y - waypoints.waypoints[i].pose.pose.position.y)**2 + \
+                       (self.current_z - waypoints.waypoints[i].pose.pose.position.z)**2)
+                if dist < dist_min:
+                    dist_min = dist
+                    near_id = i
+	    self.near_id = near_id
+
+	for i in range(self.near_id, self.near_id+LOOKAHEAD_WPS):
+	    final_wps.append(waypoints.waypoints[i])
+
+	# Publish final_waypoints.
+	final_waypoints.waypoints = final_wps
+	final_waypoints.header = waypoints.header
+	self.final_waypoints_pub.publish(final_waypoints)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
