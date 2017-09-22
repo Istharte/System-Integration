@@ -135,6 +135,7 @@ class WaypointUpdater(object):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         self.ow_id = msg
 	# TODO: write a code later.
+	v0 = get_waypoint_velocity(self.base_waypoints.waypoints[self.near_id])
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
